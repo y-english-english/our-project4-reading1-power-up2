@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>先生用：チャレンジ得点管理（Our Project4/Reading1/Power Up2）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=Andika:wght@400;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+<style>
+  :root{
+    --paper:#FAF6EA;
+    --paper-line: rgba(44,62,99,0.09);
+    --ink:#26332B;
+    --ink-soft:#5B6B60;
+    --navy:#2C3E63;
+    --navy-deep:#1D2C48;
+    --leaf:#3F6F52;
+    --leaf-soft:#DCE9DE;
+    --red:#C7452F;
+    --red-soft:#F6DEDA;
+    --gold:#D69A2D;
+    --gold-soft:#F5E6C4;
+    --card:#FFFDF7;
+    --shadow: 0 10px 24px rgba(29,44,72,0.14);
+    --radius: 20px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Zen Maru Gothic', sans-serif;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  #root{ width:100%; max-width:520px; min-height:100vh; padding:24px 16px 48px; }
+  .eng{ font-family:'Andika', sans-serif; }
+  h1{ font-size:19px; font-weight:900; color:var(--navy-deep); margin:0 0 4px; }
+  p.desc{ font-size:13px; color:var(--ink-soft); margin:0 0 18px; line-height:1.7; }
+  .card{
+    background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+    border:1px solid rgba(29,44,72,0.08); padding:22px 18px 18px; margin-bottom:18px;
+  }
+  .card h2{ font-size:15px; font-weight:700; color:var(--navy-deep); margin:0 0 12px; }
+  .stat-tabs{ display:flex; gap:8px; margin-bottom:12px; }
+  .stat-tab{
+    flex:1; padding:10px; border-radius:10px; text-align:center; cursor:pointer;
+    font-weight:700; font-size:13px; border:2px solid transparent; background:var(--paper-line);
+    color:var(--ink-soft);
+  }
+  .stat-tab.active{ background:var(--navy); color:#fff; }
+  input, select, textarea{
+    width:100%; font-family:'Andika', sans-serif; font-size:16px;
+    padding:13px; border-radius:12px; border:2px solid rgba(29,44,72,0.2);
+    margin-bottom:10px; background:#fff; color:var(--ink); font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--navy); }
+  .btn{
+    display:block; width:100%;
+    font-family:'Zen Maru Gothic', sans-serif;
+    font-weight:700; font-size:15px;
+    padding:14px 16px; border-radius:12px;
+    border:none; cursor:pointer;
+    background:var(--navy); color:#fff;
+    box-shadow: 0 3px 0 var(--navy-deep);
+    margin-bottom:10px;
+  }
+  .btn:active{ transform: translateY(2px); box-shadow:0 1px 0 var(--navy-deep); }
+  .btn.secondary{ background:var(--card); color:var(--navy); border:2px solid var(--navy); box-shadow:none; }
+  .btn.ghost{ background:transparent; color:var(--ink-soft); box-shadow:none; font-weight:500; text-decoration:underline; padding:8px; }
+  .btn.danger{ background:var(--red); box-shadow:0 3px 0 #7A2A1D; }
+  .feedback-box{ border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:13px; line-height:1.6; }
+  .feedback-box.ok{ background:var(--leaf-soft); color:var(--navy-deep); }
+  .feedback-box.ng{ background:var(--red-soft); color:#7A2A1D; }
+  .weak-item{ display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px dashed rgba(29,44,72,0.12); }
+  .weak-item:last-child{ border-bottom:none; }
+  .weak-item .rank{
+    width:24px;height:24px;border-radius:50%; background:var(--paper-line); color:var(--navy);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;
+  }
+  .empty-note{ font-size:13px; color:var(--ink-soft); text-align:center; padding:16px 6px; line-height:1.7; }
+  textarea{ font-family:'Zen Maru Gothic', sans-serif; font-size:13px; min-height:120px; resize:vertical; line-height:1.7; }
+  .copied-msg{ font-size:12px; color:var(--leaf); font-weight:700; margin:-4px 0 10px; display:none; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+/* ============================= WORDS (生徒用アプリと同じ25語) ============================= */
+const WORDS = [
+  {id:1,  en:"such"},
+  {id:2,  en:"such as ~"},
+  {id:3,  en:"arrive"},
+  {id:4,  en:"a long time ago"},
+  {id:5,  en:"message"},
+  {id:6,  en:"said"},
+  {id:7,  en:"carefully"},
+  {id:8,  en:"could"},
+  {id:9,  en:"ask"},
+  {id:10, en:"thought"},
+  {id:11, en:"for a while"},
+  {id:12, en:"out of ~"},
+  {id:13, en:"mind"},
+  {id:14, en:"news"},
+  {id:15, en:"poor"},
+  {id:16, en:"bring"},
+  {id:17, en:"may"},
+  {id:18, en:"wrong"},
+  {id:19, en:"May I ~?"},
+  {id:20, en:"help ~ with …"},
+  {id:21, en:"Hold on."},
+  {id:22, en:"Just a moment."},
+  {id:23, en:"add"},
+  {id:24, en:"inside"},
+  {id:25, en:"push"},
+];
+
+/* ============================= STATE ============================= */
+const app = {
+  course:'light',
+  data:{light:[], normal:[]},
+  status:null,
+  confirmingReset:false,
+  loaded:false,
+  statsInput:'',
+  statsResult:null, // {studentCount, totalAttempts, totalCorrect, avgAccuracy, weakest:[{id,en,accuracy,attempts}]}
+};
+
+/* ============================= STORAGE ============================= */
+async function loadLeaderboard(course){
+  try{
+    const r = await window.storage.get('leaderboard-'+course, true);
+    return r ? JSON.parse(r.value) : [];
+  }catch(e){ return []; }
+}
+async function saveLeaderboard(course, list){
+  try{ await window.storage.set('leaderboard-'+course, JSON.stringify(list), true); }
+  catch(e){ console.error('save leaderboard failed', e); }
+}
+async function submitScore(course, name, score){
+  const list = await loadLeaderboard(course);
+  list.push({name, score, ts:Date.now()});
+  list.sort((a,b)=>b.score-a.score);
+  const trimmed = list.slice(0,10);
+  await saveLeaderboard(course, trimmed);
+  return trimmed;
+}
+async function deleteLeaderboard(course){
+  try{ await window.storage.delete('leaderboard-'+course, true); }
+  catch(e){ console.error('delete leaderboard failed', e); }
+}
+async function loadAll(){
+  const [light, normal] = await Promise.all([loadLeaderboard('light'), loadLeaderboard('normal')]);
+  app.data = {light, normal};
+  app.loaded = true;
+}
+
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================= COPY TEXT BUILDER (ランキング) ============================= */
+function buildCopyText(){
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日更新`;
+  const fmt = (list)=> list.slice(0,3).length
+    ? list.slice(0,3).map((r,i)=>`${i+1}位 ${r.name} ${r.score}pt`).join('\n')
+    : '(まだ記録なし)';
+  return [
+    `【Our Project4/Reading1/Power Up2 チャレンジランキング】`,
+    dateStr,
+    ``,
+    `■ライトコース`,
+    fmt(app.data.light),
+    ``,
+    `■ノーマルコース`,
+    fmt(app.data.normal),
+  ].join('\n');
+}
+
+/* ============================= 正答率データの集計 ============================= */
+// 生徒がコピーした "1:3/4,2:2/2,..." のようなテキストを、複数人分まとめて貼り付けても集計できる。
+// 区切りは改行でもカンマでも良い(1行1人分でも、全部カンマ区切りでも対応)。
+function parseAndAggregateStats(text){
+  const wordTotals = {}; // id -> {attempts, correct}
+  let studentCount = 0;
+  const lines = (text||'').split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  lines.forEach(line=>{
+    const tokens = line.split(',').map(t=>t.trim()).filter(Boolean);
+    let matchedAny = false;
+    tokens.forEach(tok=>{
+      const m = tok.match(/^(\d+):(\d+)\/(\d+)$/);
+      if(m){
+        matchedAny = true;
+        const id = m[1];
+        const correct = parseInt(m[2],10);
+        const attempts = parseInt(m[3],10);
+        if(!wordTotals[id]) wordTotals[id] = {attempts:0, correct:0};
+        wordTotals[id].attempts += attempts;
+        wordTotals[id].correct += correct;
+      }
+    });
+    if(matchedAny) studentCount += 1;
+  });
+
+  let totalAttempts=0, totalCorrect=0;
+  const perWord = WORDS.map(w=>{
+    const s = wordTotals[String(w.id)];
+    if(s){ totalAttempts += s.attempts; totalCorrect += s.correct; }
+    const accuracy = s && s.attempts ? Math.round(s.correct/s.attempts*100) : null;
+    return {id:w.id, en:w.en, attempts: s?s.attempts:0, accuracy};
+  });
+  const avgAccuracy = totalAttempts ? Math.round(totalCorrect/totalAttempts*100) : null;
+  const weakest = perWord.filter(w=>w.attempts>0).sort((a,b)=>a.accuracy-b.accuracy).slice(0,5);
+
+  return { studentCount, totalAttempts, totalCorrect, avgAccuracy, weakest };
+}
+
+function buildStatsCopyText(result){
+  if(!result || !result.totalAttempts){
+    return '(まだ集計されたデータがありません)';
+  }
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日更新`;
+  const weakLines = result.weakest.map((w,i)=>`${i+1}位 ${w.en}（正答率${w.accuracy}%）`).join('\n');
+  return [
+    `【Our Project4/Reading1/Power Up2 正答率】`,
+    dateStr,
+    ``,
+    `学年全体の平均正答率：${result.avgAccuracy}%（提出${result.studentCount}件・のべ${result.totalAttempts}回挑戦）`,
+    ``,
+    `■苦手単語TOP${result.weakest.length}`,
+    weakLines,
+  ].join('\n');
+}
+
+/* ============================= RENDER ============================= */
+function render(){
+  const root = document.getElementById('root');
+  root.innerHTML = renderScreen();
+  bindEvents();
+}
+
+function renderScreen(){
+  const course = app.course;
+  const list = app.data[course] || [];
+  const top5 = list.slice(0,5);
+
+  let listBody;
+  if(!app.loaded){
+    listBody = `<div class="empty-note">読み込み中...</div>`;
+  } else if(!top5.length){
+    listBody = `<div class="empty-note">まだ記録がありません。</div>`;
+  } else {
+    listBody = top5.map((r,i)=>`
+      <div class="weak-item">
+        <span class="rank">${i+1}</span>
+        <span style="font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(r.name)}</span>
+        <span class="eng" style="font-weight:700;color:var(--navy-deep);">${r.score}pt</span>
+      </div>`).join('');
+  }
+
+  const statusBox = app.status ? `<div class="feedback-box ok">${esc(app.status)}</div>` : '';
+
+  const resetBlock = app.confirmingReset
+    ? `<div class="feedback-box ng">${course==='light'?'ライト':'ノーマル'}コースのランキングを本当に削除しますか？この操作は取り消せません。</div>
+       <button class="btn danger" data-action="resetConfirm">削除する</button>
+       <button class="btn secondary" data-action="resetCancel">キャンセル</button>`
+    : (top5.length ? `<button class="btn ghost" data-action="resetAsk">このコースのランキングをリセットする</button>` : '');
+
+  let statsResultBlock = '';
+  if(app.statsResult){
+    const r = app.statsResult;
+    if(!r.totalAttempts){
+      statsResultBlock = `<div class="feedback-box ng" style="margin-top:10px;">数字を読み取れませんでした。貼り付けたデータの形式を確認してください。</div>`;
+    } else {
+      statsResultBlock = `
+      <div class="feedback-box ok" style="margin-top:10px;">
+        提出${r.studentCount}件を集計しました。<br>
+        学年全体の平均正答率：<span class="eng" style="font-weight:700;">${r.avgAccuracy}%</span>（のべ${r.totalAttempts}回挑戦）
+      </div>
+      <div style="margin-top:4px;">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;color:var(--navy-deep);">苦手単語TOP${r.weakest.length}</div>
+        ${r.weakest.map((w,i)=>`
+          <div class="weak-item">
+            <span class="rank">${i+1}</span>
+            <span class="eng" style="font-weight:700;flex:1;">${esc(w.en)}</span>
+            <span style="font-size:12px;color:var(--ink-soft);">正答率 ${w.accuracy}%</span>
+          </div>`).join('')}
+      </div>`;
+    }
+  }
+
+  return `
+  <h1>先生用：チャレンジ得点管理</h1>
+  <p class="desc">Our Project4/Reading1/Power Up2 のチャレンジモードの得点を登録・確認できます。このツールはログインしたあなただけが使うものです。生徒用アプリからは見えません。</p>
+
+  ${statusBox}
+
+  <div class="card">
+    <h2>①得点を登録する</h2>
+    <div class="stat-tabs">
+      <div class="stat-tab ${course==='light'?'active':''}" data-coursetab="light">ライトコース</div>
+      <div class="stat-tab ${course==='normal'?'active':''}" data-coursetab="normal">ノーマルコース</div>
+    </div>
+    <input type="text" id="nameInput" placeholder="生徒の表示名（例：たろう、3組など）" maxlength="10">
+    <input type="number" id="scoreInput" placeholder="得点（例：250）" min="0" step="1">
+    <button class="btn" data-action="submit">登録する</button>
+  </div>
+
+  <div class="card">
+    <h2>②現在の上位（${course==='light'?'ライト':'ノーマル'}コース）</h2>
+    ${listBody}
+    <div style="margin-top:10px;">${resetBlock}</div>
+  </div>
+
+  <div class="card">
+    <h2>③ランキングを生徒用アプリに反映する</h2>
+    <p class="desc" style="margin-bottom:10px;">下のテキストをコピーして、生徒用アプリを編集しているClaudeのチャットに貼り付け、「これで更新して」と伝えてください。同じURLのまま、最新のランキングに書き換わります。</p>
+    <textarea id="copyText" readonly>${esc(buildCopyText())}</textarea>
+    <div class="copied-msg" id="copiedMsg">コピーしました！</div>
+    <button class="btn secondary" data-action="copy">ランキング結果をコピーする</button>
+  </div>
+
+  <div class="card">
+    <h2>④正答率データを集計する</h2>
+    <p class="desc" style="margin-bottom:10px;">生徒が「正答率」画面でコピーした提出用データを、まとめてここに貼り付けてください。1人分ずつ改行して貼っても、複数人分を一気に貼ってもOKです。</p>
+    <textarea id="statsInput" placeholder="例：&#10;1:3/4,2:2/2,5:1/3&#10;1:4/4,3:2/3,7:1/2&#10;...（生徒の人数分）" style="min-height:140px;">${esc(app.statsInput)}</textarea>
+    <button class="btn" data-action="aggregateStats">集計する</button>
+    ${statsResultBlock}
+  </div>
+
+  ${app.statsResult && app.statsResult.totalAttempts ? `
+  <div class="card">
+    <h2>⑤正答率を生徒用アプリに反映する</h2>
+    <p class="desc" style="margin-bottom:10px;">下のテキストをコピーして、同じように生徒用アプリのチャットに貼り付けてください。</p>
+    <textarea id="statsCopyText" readonly>${esc(buildStatsCopyText(app.statsResult))}</textarea>
+    <div class="copied-msg" id="statsCopiedMsg">コピーしました！</div>
+    <button class="btn secondary" data-action="copyStatsResult">正答率の結果をコピーする</button>
+  </div>` : ''}`;
+}
+
+/* ============================= EVENTS ============================= */
+function bindEvents(){
+  document.querySelectorAll('[data-coursetab]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      app.course = el.getAttribute('data-coursetab');
+      app.confirmingReset = false;
+      app.status = null;
+      render();
+    });
+  });
+
+  const submitBtn = document.querySelector('[data-action="submit"]');
+  if(submitBtn){
+    submitBtn.addEventListener('click', async ()=>{
+      const nameInput = document.getElementById('nameInput');
+      const scoreInput = document.getElementById('scoreInput');
+      const name = nameInput ? nameInput.value.trim() : '';
+      const scoreVal = scoreInput ? parseInt(scoreInput.value, 10) : NaN;
+      if(!name){ if(nameInput) nameInput.focus(); return; }
+      if(isNaN(scoreVal) || scoreVal<0){ if(scoreInput) scoreInput.focus(); return; }
+      submitBtn.disabled = true;
+      await submitScore(app.course, name.slice(0,10), scoreVal);
+      await loadAll();
+      app.status = `「${name}」さんの得点（${scoreVal}pt）を登録しました。`;
+      render();
+    });
+  }
+
+  const resetAskBtn = document.querySelector('[data-action="resetAsk"]');
+  if(resetAskBtn) resetAskBtn.addEventListener('click', ()=>{
+    app.confirmingReset = true;
+    render();
+  });
+  const resetCancelBtn = document.querySelector('[data-action="resetCancel"]');
+  if(resetCancelBtn) resetCancelBtn.addEventListener('click', ()=>{
+    app.confirmingReset = false;
+    render();
+  });
+  const resetConfirmBtn = document.querySelector('[data-action="resetConfirm"]');
+  if(resetConfirmBtn) resetConfirmBtn.addEventListener('click', async ()=>{
+    await deleteLeaderboard(app.course);
+    app.data[app.course] = [];
+    app.confirmingReset = false;
+    app.status = null;
+    render();
+  });
+
+  const copyBtn = document.querySelector('[data-action="copy"]');
+  if(copyBtn){
+    copyBtn.addEventListener('click', async ()=>{
+      const ta = document.getElementById('copyText');
+      const msg = document.getElementById('copiedMsg');
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(ta.value);
+        } else {
+          ta.select();
+          document.execCommand('copy');
+        }
+        if(msg){ msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; }, 2000); }
+      }catch(e){
+        ta.select();
+      }
+    });
+  }
+
+  const statsInputEl = document.getElementById('statsInput');
+  if(statsInputEl){
+    statsInputEl.addEventListener('input', ()=>{
+      app.statsInput = statsInputEl.value;
+    });
+  }
+
+  const aggregateBtn = document.querySelector('[data-action="aggregateStats"]');
+  if(aggregateBtn){
+    aggregateBtn.addEventListener('click', ()=>{
+      app.statsInput = statsInputEl ? statsInputEl.value : app.statsInput;
+      app.statsResult = parseAndAggregateStats(app.statsInput);
+      render();
+    });
+  }
+
+  const copyStatsResultBtn = document.querySelector('[data-action="copyStatsResult"]');
+  if(copyStatsResultBtn){
+    copyStatsResultBtn.addEventListener('click', async ()=>{
+      const ta = document.getElementById('statsCopyText');
+      const msg = document.getElementById('statsCopiedMsg');
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(ta.value);
+        } else {
+          ta.select();
+          document.execCommand('copy');
+        }
+        if(msg){ msg.style.display='block'; setTimeout(()=>{ msg.style.display='none'; }, 2000); }
+      }catch(e){
+        ta.select();
+      }
+    });
+  }
+}
+
+/* ============================= INIT ============================= */
+async function init(){
+  render();
+  await loadAll();
+  render();
+}
+init();
+</script>
+</body>
+</html>
